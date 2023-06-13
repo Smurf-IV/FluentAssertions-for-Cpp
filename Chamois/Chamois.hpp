@@ -1,982 +1,1213 @@
 #pragma once
 
 /*
- *	Copyright 2014 Oli Wilkinson
+ *    Copyright 2014 Oli Wilkinson
  *
- *	Licensed under the Apache License, Version 2.0 (the "License");
- *	you may not use this file except in compliance with the License.
- *	You may obtain a copy of the License at
+ *    Licensed under the Apache License, Version 2.0 (the "License");
+ *    you may not use this file except in compliance with the License.
+ *    You may obtain a copy of the License at
  *
- *	http://www.apache.org/licenses/LICENSE-2.0
+ *    http://www.apache.org/licenses/LICENSE-2.0
  *
- *	Unless required by applicable law or agreed to in writing, software
- *		distributed under the License is distributed on an "AS IS" BASIS,
- *		WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *		See the License for the specific language governing permissions and
- *		limitations under the License.
+ *    Unless required by applicable law or agreed to in writing, software
+ *        distributed under the License is distributed on an "AS IS" BASIS,
+ *        WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *        See the License for the specific language governing permissions and
+ *        limitations under the License.
+ *  
+ *    Then modified by SKC from 2022 onwards
  */
 
 #include <algorithm>
-#include <codecvt>
-#include <locale>
+#if _HAS_CXX20
+#include <format>
+#endif
+#include <iostream>
 #include <string>
+#include <xlocbuf>
 
+// ReSharper disable CppClangTidyCppcoreguidelinesMacroUsage // Needed to stop trying to replace the __FILE__ usage inside the callers function
+// ReSharper disable CppInconsistentNaming                  // Needed to look like Macros are the actual function calls inside callers function
 
 #ifdef CHAMOIS_UNITTEST_FRAMEWORK
 #undef CHAMOIS_UNITTEST_FRAMEWORK
 #endif
 
-#define CHAMOIS_UNITTEST_FRAMEWORK_MS		1
-#define CHAMOIS_UNITTEST_FRAMEWORK_GTEST	2
-#define CHAMOIS_UNITTEST_FRAMEWORK_BOOST	3
+#define CHAMOIS_UNITTEST_FRAMEWORK_MS 1
+#define CHAMOIS_UNITTEST_FRAMEWORK_GTEST 2
+#define CHAMOIS_UNITTEST_FRAMEWORK_BOOST 3
 
 #ifdef MS_CPP_UNITTESTFRAMEWORK
-	#ifdef CHAMOIS_UNITTEST_FRAMEWORK
-		#error Multiple test frameworks found
-	#endif
-	#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_MS
+#ifdef CHAMOIS_UNITTEST_FRAMEWORK
+#error Multiple test frameworks found
+#endif
+#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_MS
 #endif
 
-#ifdef GTEST_INCLUDE_GTEST_GTEST_H_
-		#ifdef CHAMOIS_UNITTEST_FRAMEWORK
-	#error Multiple test frameworks found
-	#endif
-	#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_GTEST
+#if defined(GTEST_INCLUDE_GTEST_GTEST_H_) || defined(GOOGLETEST_INCLUDE_GTEST_GTEST_H_)
+#ifdef CHAMOIS_UNITTEST_FRAMEWORK
+#error Multiple test frameworks found
+#endif
+#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_GTEST
 #endif
 
 #ifdef BOOST_TEST_MODULE
-	#ifdef CHAMOIS_UNITTEST_FRAMEWORK
-		#error Multiple test frameworks found
-	#endif
-	#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_BOOST
+#ifdef CHAMOIS_UNITTEST_FRAMEWORK
+#error Multiple test frameworks found
+#endif
+#define CHAMOIS_UNITTEST_FRAMEWORK CHAMOIS_UNITTEST_FRAMEWORK_BOOST
 #endif
 
 #ifndef CHAMOIS_UNITTEST_FRAMEWORK
-	#error No supported test framework found
+#error No supported test framework found
 #endif
 
-namespace evolutional
+namespace evolutional::Chamois
 {
-	namespace Chamois
-	{
-		namespace detail
-		{
+namespace detail
+{
 #if CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_MS
-			class MsAssert
-			{
-			public:
-				template<typename T>
-				static void Equal(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					Microsoft::VisualStudio::CppUnitTestFramework::Assert::AreEqual(expected_value, actual_value, because);
-				}
+class MsAssert
+{
+    static std::wstring message(const std::string& because)
+    {
+        RETURN_WIDE_STRING(because.c_str());
+    }
 
-				template<typename T>
-				static void NotEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					Microsoft::VisualStudio::CppUnitTestFramework::Assert::AreNotEqual(expected_value, actual_value, because);
-				}
+  public:
+    template <typename T> static void Equal(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        Microsoft::VisualStudio::CppUnitTestFramework::Assert::AreEqual(expected_value, actual_value, message(because).c_str());
+    }
 
-				static void True(const bool &actual_value, const wchar_t *because)
-				{
-					Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(actual_value, because);
-				}
+    template <typename T>
+    static void NotEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        Microsoft::VisualStudio::CppUnitTestFramework::Assert::AreNotEqual(expected_value, actual_value, message(because).c_str());
+    }
 
-				static void False(const bool &actual_value, const wchar_t *because)
-				{
-					Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsFalse(actual_value, because);
-				}
+    static void True(const bool& actual_value, const std::string& because)
+    {
+        Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsTrue(actual_value, message(because).c_str());
+    }
 
-				static void Fail(const wchar_t *because)
-				{
-					Microsoft::VisualStudio::CppUnitTestFramework::Assert::Fail(because);
-				}
-			};
+    static void False(const bool& actual_value, const std::string& because)
+    {
+        Microsoft::VisualStudio::CppUnitTestFramework::Assert::IsFalse(actual_value, message(because).c_str());
+    }
+
+    static void Fail(const std::string& because)
+    {
+        Microsoft::VisualStudio::CppUnitTestFramework::Assert::Fail(message(because).c_str());
+    }
+
+    template <typename T>
+    static void GreaterEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        True(expected_value <= actual_value, because);
+    }
+    template <typename T>
+    static void GreaterThan(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        True(expected_value < actual_value, because);
+    }
+
+
+    template <typename T>
+    static void LessEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        True(expected_value >= actual_value, because);
+    }
+    template <typename T>
+    static void LessThan(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        True(expected_value > actual_value, because);
+    } 
+
+    static std::string GetStackMessage(const std::string& file, int line, const std::string& because)
+    {
+        // TODO: Use the Windows `__LineInfo(const wchar_t* pszFileName, const char* pszFuncName, int lineNumber)`
+        // and pass into the asserts above
+#if _HAS_CXX20
+        auto format = std::format("Location: @ [{}({})]", file, line);
+        if (!because.empty())
+        {
+            format += std::format("\nMessage : {}", because);
+        }
+        return format;
+#else
+        return "Location: @ [" + file + "(" + std::to_string(line) + ")]\n" + because;
+#endif
+    }
+
+};
 #endif
 
 #if CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_GTEST
-			class GTestAssert
-			{
-			public:
-				template<typename T>
-				static void Equal(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					ASSERT_EQ(expected_value, actual_value) << because;
-				}
+// https://google.github.io/googletest/advanced.html#asserting-on-subroutines-with-an-exception
+class ThrowListener : public testing::EmptyTestEventListener
+{
+    // [DebuggerStepThrough] equivalent ??
+    void OnTestPartResult(const testing::TestPartResult& result) override
+    {
+        if (result.type() == testing::TestPartResult::kFatalFailure)
+        {
+            // TODO: Replace filename and line number in "new" TestPartResult
+            testing::TestPartResult result1(testing::TestPartResult::kFatalFailure, "", 0, result.message());
+            throw testing::AssertionException(result1);
+        }
+    }
+};
 
-				template<typename T>
-				static void NotEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					ASSERT_NE(expected_value, actual_value) << because;
-				}
+class GTestAssert
+{
+public:
+    void static SetThrowListener()
+    {
+        // See https://google.github.io/googletest/advanced.html#asserting-on-subroutines-with-an-exception
+        // and search for "Propagating Fatal Failures"
+        if (static bool done = false; !done)
+        {
+            // If this does not fire then check that `GTEST_REMOVE_LEGACY_TEST_CASEAPI_` has been set in all test projects
+            static auto listener = new ThrowListener();  // NOLINT(cppcoreguidelines-owning-memory)
+            testing::UnitTest::GetInstance()->listeners().Append(listener);
+            done = true;
+        }
+    }
 
-				static void True(const bool &actual_value, const wchar_t *because)
-				{
-					ASSERT_TRUE(actual_value) << because;
-				}
+  public:
+    template <typename T> static void Equal(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_EQ(expected_value, actual_value) << because;
+    }
 
-				static void False(const bool &actual_value, const wchar_t *because)
-				{
-					ASSERT_FALSE(actual_value) << because;
-				}
+    template <typename T>
+    static void NotEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_NE(expected_value, actual_value) << because;
+    }
 
-				static void Fail(const wchar_t *because)
-				{
-					ASSERT_TRUE(false) << because;
-				}
-			};
+    template <typename T>
+    static void GreaterThan(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_GT(actual_value, expected_value) << because;
+    }
+
+    template <typename T>
+    static void LessThan(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_LT(actual_value, expected_value) << because;
+    }
+
+    template <typename T>
+    static void GreaterEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_GE(actual_value, expected_value) << because;
+    }
+
+    template <typename T>
+    static void LessEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_LE(actual_value, expected_value) << because;
+    }
+
+    static void True(const bool& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_TRUE(actual_value) << because;
+    }
+
+    static void False(const bool& actual_value, const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_FALSE(actual_value) << because;
+    }
+
+    static void Fail(const std::string& because)
+    {
+        SetThrowListener();
+        ASSERT_TRUE(false) << because;
+    }
+
+    static std::string GetStackMessage(const std::string& file, int line, const std::string& because)
+    {
+#if _HAS_CXX20
+        auto format = std::format("Location: @ [{}({})]", file, line);
+        if (!because.empty())
+        {
+            format += std::format("\nMessage : {}", because );
+        }
+        return format;
+#else
+        return "Location: @ [" + file + "(" + std::to_string(line) + ")]\n" + because;
+#endif
+    }
+};
 #endif
 
 #if CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_BOOST
-			class BoostTestAssert
-			{
-			public:
-				template<typename T>
-				static void Equal(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE(expected_value == actual_value);
-				}
+class BoostTestAssert
+{
+  public:
+    template <typename T> static void Equal(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        BOOST_REQUIRE_MESSAGE(expected_value == actual_value, because);
+    }
 
-				static void Equal(const wchar_t *expected_value, const wchar_t *actual_value, const wchar_t *because)
-				{
-					std::wstring e(expected_value);
-					std::wstring a(actual_value);
-					Equal(e, a, because);
-				}
+    static void Equal(const char* expected_value, const char* actual_value, const std::string& because)
+    {
+        const std::wstring e(expected_value);
+        const std::wstring a(actual_value);
+        Equal(e, a, because);
+    }
 
-				template<>
-				static void Equal(const float &expected_value, const float &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE_CLOSE(expected_value, actual_value, 0.0001);
-				}
+    template <> static void Equal(const float& expected_value, const float& actual_value, const std::string& because)
+    {
+        BOOST_TEST_TOOL_IMPL(0, ::boost::test_tools::check_is_close_t(), MultiByteString(because), REQUIRE, CHECK_CLOSE,
+                             (expected_value)(actual_value)(::boost::math::fpc::percent_tolerance(0.0001)));
+        //BOOST_REQUIRE_CLOSE( expected_value, actual_value, 0.0001 );
+    }
 
-				template<>
-				static void Equal(const double &expected_value, const double &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE_CLOSE(expected_value, actual_value, 0.0001);
-				}
+    template <> static void Equal(const double& expected_value, const double& actual_value, const std::string& because)
+    {
+        BOOST_TEST_TOOL_IMPL(0, ::boost::test_tools::check_is_close_t(), MultiByteString(because), REQUIRE, CHECK_CLOSE,
+                             (expected_value)(actual_value)(::boost::math::fpc::percent_tolerance(0.0001)));
+        //BOOST_REQUIRE_CLOSE( expected_value, actual_value, 0.0001 );
+    }
 
-				template<typename T>
-				static void NotEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE(expected_value != actual_value);
-				}
+    template <typename T>
+    static void NotEqual(const T& expected_value, const T& actual_value, const std::string& because)
+    {
+        BOOST_REQUIRE_MESSAGE(expected_value != actual_value, because);
+    }
 
-				static void NotEqual(const wchar_t *expected_value, const wchar_t *actual_value, const wchar_t *because)
-				{
-					std::wstring e(expected_value);
-					std::wstring a(actual_value);
-					NotEqual(e, a, because);
-				}
+    static void NotEqual(const char* expected_value, const char* actual_value, const std::string& because)
+    {
+        const std::wstring e(expected_value);
+        const std::wstring a(actual_value);
+        NotEqual(e, a, because);
+    }
 
-				static void True(const bool &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE(actual_value);
-				}
+    static void True(const bool& actual_value, const std::string& because)
+    {
+        BOOST_REQUIRE_MESSAGE(actual_value, because);
+    }
 
-				static void False(const bool &actual_value, const wchar_t *because)
-				{
-					BOOST_REQUIRE(!actual_value);
-				}
+    static void False(const bool& actual_value, const std::string& because)
+    {
+        BOOST_REQUIRE_MESSAGE(!actual_value, because);
+    }
 
-				static void Fail(const wchar_t *because)
-				{
-					std::wstring_convert<std::codecvt_utf8<wchar_t>, wchar_t> cvt;
-					std::string str = cvt.to_bytes(std::wstring(because));
-					BOOST_FAIL(str.c_str());
-				}
-			};
+    static LPCTSTR MultiByteString(const std::string& because)
+    {
+        const std::wstring wstr = because;
+        std::string strTo;
+        if (!wstr.empty())
+        {
+            const int size_needed = WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), NULL, 0, NULL, NULL);
+            strTo = std::string(size_needed, 0);
+            WideCharToMultiByte(CP_UTF8, 0, &wstr[0], (int)wstr.size(), &strTo[0], size_needed, NULL, NULL);
+        }
+        return strTo;
+    }
+
+    static void Fail(const std::string& because)
+    {
+        BOOST_FAIL(MultiByteString(because));
+    }
+
+    static std::string GetStackMessage(const std::string& file, int line, const std::string& because)
+    {
+        // TODO: Use boost::stackTrace
+#if _HAS_CXX20
+        auto format = std::format("Location: @ [{}({})]", file, line);
+        if (!because.empty())
+        {
+            format += std::format("\nMessage : {}", because);
+        }
+        return format;
+#else
+        return "Location: @ [" + file + "(" + std::to_string(line) + ")]\n" + because;
+#endif
+    }
+
+};
 #endif
 
-			template<class TAssert>
-			class TAssertInternal
-			{
-			public:
-				template<typename T>
-				void AssertEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::Equal(expected_value, actual_value, because);
-				}
+template <class TAssert> class TAssertInternal
+{
+  public:
+    template <typename T>
+    void AssertEqual(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::Equal(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertNotEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::NotEqual(expected_value, actual_value, because);
-				}
+    template <typename T>
+    void AssertNotEqual(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::NotEqual(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertGreater(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value > expected_value, because);
-				}
+    template <typename T>
+    void AssertGreater(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::GreaterThan(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertLess(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value < expected_value, because);
-				}
+    template <typename T>
+    void AssertLess(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::LessThan(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertGreaterEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value >= expected_value, because);
-				}
+    template <typename T>
+    void AssertGreaterEqual(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::GreaterEqual(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertLessEqual(const T &expected_value, const T &actual_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value <= expected_value, because);
-				}
+    template <typename T>
+    void AssertLessEqual(const T& expected_value, const T& actual_value, const std::string& because) 
+    {
+        TAssert::LessEqual(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertInRange(const T &actual_value, const T &min_value, const T &max_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value >= min_value, because);
-					TAssert::True(actual_value <= max_value, because);
-				}
+    template <typename T>
+    void AssertInRange(const T& actual_value, const T& min_value, const T& max_value, const std::string& because) 
+    {
+        TAssert::True( min_value <= actual_value && actual_value <= max_value, because);
+    }
 
-				template<typename T>
-				void AssertNotInRange(const T &actual_value, const T &min_value, const T &max_value, const wchar_t *because)
-				{
-					TAssert::False(actual_value >= min_value && actual_value <= max_value, because);
-				}
+    template <typename T>
+    void AssertNotInRange(const T& actual_value, const T& min_value, const T& max_value,
+                          const std::string& because) 
+    {
+        TAssert::True(min_value > actual_value || actual_value > max_value, because);
+    }
 
-				template<typename T>
-				void AssertArrayEqual(const T *expected_values, const size_t expected_values_len, const T *actual_values, const size_t actual_values_len, const wchar_t *because)
-				{
-					TAssert::Equal(expected_values_len, actual_values_len, L"Array lengths differ");
-					for (size_t i = 0; i < expected_values_len; ++i)
-					{
-						if (expected_values[i] != actual_values[i])
-						{
-							std::wstring message(L"Array contents differ at index: ");
-							message += std::to_wstring(i);
-							TAssert::Fail(message.c_str());
-						}
+    template <typename T>
+    void AssertArrayEqual(const T* expected_values, const size_t expected_values_len, const T* actual_values,
+                          const size_t actual_values_len, const std::string& because) 
+    {
+        TAssert::Equal(expected_values_len, actual_values_len, "Array lengths differ\n" + because);
+        for (size_t i = 0; i < expected_values_len; ++i)
+        {
+            if (expected_values[i] != actual_values[i])
+            {
+                std::string message("Array contents differ at index: ");
+                message += std::to_string(i);
+                message += "\n";
+                message += because;
+                TAssert::Fail(message);
+            }
+        }
+    }
 
-					}
-				}
+    template <typename T>
+    void AssertArrayNotEqual(const T* expected_values, const size_t expected_values_len, const T* actual_values,
+                             const size_t actual_values_len, const std::string& because) 
+    {
+        if (expected_values_len != actual_values_len)
+        {
+            return;
+        }
 
-				template<typename T>
-				void AssertArrayNotEqual(const T *expected_values, const size_t expected_values_len, const T *actual_values, const size_t actual_values_len, const wchar_t *because)
-				{
-					if (expected_values_len != actual_values_len)
-						return;
+        const auto min_len = (std::min)(actual_values_len, expected_values_len);
+        bool expected_lhs = false;
+        if (expected_values_len < actual_values_len)
+        {
+            expected_lhs = true;
+        }
 
-					auto min_len = (std::min)(actual_values_len, expected_values_len);
-					bool expected_lhs = false;
-					if (expected_values_len < actual_values_len)
-					{
-						expected_lhs = true;
-					}
+        const T* lhs = expected_lhs ? expected_values : actual_values;
+        const T* rhs = !expected_lhs ? expected_values : actual_values;
 
-					const T* lhs = expected_lhs ? expected_values : actual_values;
-					const T* rhs = !expected_lhs ? expected_values : actual_values;
+        for (size_t i = 0; i < min_len; ++i)
+        {
+            if (lhs[i] != rhs[i])
+            {
+                return;
+            }
+        }
+        TAssert::Fail("Array contents the same\n" + because);
+    }
 
-					for (size_t i = 0; i < min_len; ++i)
-					{
-						if (lhs[i] != rhs[i])
-						{
-							return;
-						}
-					}
-					TAssert::Fail(L"Array contents the same");
-				}
+    void AssertTrue(const bool& actual_value, const std::string& because) 
+    {
+        TAssert::True(actual_value, because);
+    }
 
-				void AssertTrue(const bool &actual_value, const wchar_t *because)
-				{
-					TAssert::True(actual_value, because);
-				}
+    void AssertFalse(const bool& actual_value, const std::string& because) 
+    {
+        TAssert::False(actual_value, because);
+    }
 
-				void AssertFalse(const bool &actual_value, const wchar_t *because)
-				{
-					TAssert::False(actual_value, because);
-				}
+    template <typename T>
+    void AssertEqual(const T* expected_value, const T* actual_value, const std::string& because) 
+    {
+        TAssert::Equal(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertEqual(const T* expected_value, const T* actual_value, const wchar_t *because)
-				{
-					TAssert::Equal(expected_value, actual_value, because);
-				}
+    template <typename T>
+    void AssertNotEqual(const T* expected_value, const T* actual_value, const std::string& because) 
+    {
+        TAssert::NotEqual(expected_value, actual_value, because);
+    }
 
-				template<typename T>
-				void AssertNotEqual(const T* expected_value, const T* actual_value, const wchar_t *because)
-				{
-					TAssert::NotEqual(expected_value, actual_value, because);
-				}
+    void AssertStringLength(const size_t expected_length, const std::wstring& actual_string,
+                            const std::string& because) 
+    {
+        TAssert::Equal(expected_length, actual_string.length(), because);
+    }
 
+    void AssertNotStringLength(const size_t expected_length, const std::wstring& actual_string,
+                               const std::string& because) 
+    {
+        TAssert::NotEqual(expected_length, actual_string.length(), because);
+    }
 
-				void AssertStringLength(const size_t expected_length, const std::wstring &actual_string, const wchar_t *because)
-				{
-					TAssert::Equal(expected_length, actual_string.length(), because);
-				}
+    void AssertStringEmpty(const std::wstring& actual_string, const std::string& because) 
+    {
+        TAssert::Equal(0, actual_string.length(), because);
+    }
 
-				void AssertNotStringLength(const size_t expected_length, const std::wstring &actual_string, const wchar_t *because)
-				{
-					TAssert::NotEqual(expected_length, actual_string.length(), because);
-				}
+    void AssertNotStringEmpty(const std::wstring& actual_string, const std::string& because) 
+    {
+        TAssert::NotEqual(size_t(0), actual_string.length(), because);
+    }
 
-				void AssertStringEmpty(const std::wstring &actual_string, const wchar_t *because)
-				{
-					TAssert::Equal(size_t(0), actual_string.length(), because);
-				}
+    void AssertStringStartsWith(const std::string& expected_prefix, const std::string& actual_string,
+                                const std::string& because) 
+    {
+        TAssert::True(actual_string.substr(0, expected_prefix.length()) == expected_prefix, because);
+    }
 
-				void AssertNotStringEmpty(const std::wstring &actual_string, const wchar_t *because)
-				{
-					TAssert::NotEqual(size_t(0), actual_string.length(), because);
-				}
+    void AssertStringLength(const size_t expected_length, const std::string& actual_string,
+                            const std::string& because) const
+    {
+        TAssert::Equal(expected_length, actual_string.length(), because);
+    }
 
-				void AssertStringStartsWith(const std::wstring &expected_prefix, const std::wstring &actual_string, const wchar_t *because)
-				{
-					TAssert::True(actual_string.substr(0, expected_prefix.length()) == expected_prefix, because);
-				}
+    void AssertNotStringLength(const size_t expected_length, const std::string& actual_string,
+                               const std::string& because) 
+    {
+        TAssert::NotEqual(expected_length, actual_string.length(), because);
+    }
 
-				void AssertStringLength(const size_t expected_length, const std::string &actual_string, const wchar_t *because)
-				{
-					TAssert::Equal(expected_length, actual_string.length(), because);
-				}
+    void AssertStringEmpty(const std::string& actual_string, const std::string& because) 
+    {
+        TAssert::Equal(size_t(0), actual_string.length(), because);
+    }
 
-				void AssertNotStringLength(const size_t expected_length, const std::string &actual_string, const wchar_t *because)
-				{
-					TAssert::NotEqual(expected_length, actual_string.length(), because);
-				}
+    void AssertNotStringEmpty(const std::string& actual_string, const std::string& because) 
+    {
+        TAssert::NotEqual(size_t(0), actual_string.length(), because);
+    }
 
-				void AssertStringEmpty(const std::string &actual_string, const wchar_t *because)
-				{
-					TAssert::Equal(size_t(0), actual_string.length(), because);
-				}
+    void AssertFail(const std::string& because) 
+    {
+        TAssert::Fail(because);
+    }
 
-				void AssertNotStringEmpty(const std::string &actual_string, const wchar_t *because)
-				{
-					TAssert::NotEqual(size_t(0), actual_string.length(), because);
-				}
-
-				void AssertStringStartsWith(const std::string &expected_prefix, const std::string &actual_string, const wchar_t *because)
-				{
-					TAssert::True(actual_string.substr(0, expected_prefix.length()) == expected_prefix, because);
-				}
-
-				void AssertFail(const wchar_t *because) 
-				{
-					TAssert::Fail(because);
-				}
-			};
-
+    std::string GetStackMessage(const std::string& file, int line, const std::string& because) 
+    {
+        return TAssert::GetStackMessage(file, line, because);
+    }
+};
 
 #if CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_MS
-			typedef TAssertInternal<MsAssert> AssertInternal;
+typedef TAssertInternal<MsAssert> AssertInternal;
 #elif CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_GTEST
-			typedef TAssertInternal<GTestAssert> AssertInternal;
+using AssertInternal = TAssertInternal<GTestAssert>;
 #elif CHAMOIS_UNITTEST_FRAMEWORK == CHAMOIS_UNITTEST_FRAMEWORK_BOOST
-			typedef TAssertInternal<BoostTestAssert> AssertInternal;
+typedef TAssertInternal<BoostTestAssert> AssertInternal;
 #else
-	#error No supported test framework found
+#error No supported test framework found
 #endif
 
-
-
-			/* Default */
-			template<typename T>
-			class ShouldImpl
-			{
-			public:
-				ShouldImpl(AssertInternal &assert_obj, const T& value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				void Be(const T&expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(expected_value, value_, because);
-				}
-
-				void NotBe(const T&expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(expected_value, value_, because);
-				}
-
-			private:
-				const T& value_;
-				AssertInternal &assert_obj_;
-			};
-
-
-			template<typename T>
-			class ThatImpl
-			{
-			public:
-				ThatImpl(AssertInternal &assert_obj, const T& value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				const T& value() const { return value_; }
-
-				ShouldImpl<T> Should() { return ShouldImpl<T>(assert_obj_, value_); }
-
-			protected:
-				const T& value_;
-				AssertInternal &assert_obj_;
-			};
-
-
-
-
-			/* Numeric Types */
-			template<typename T>
-			class ShouldNumImpl
-			{
-			public:
-				ShouldNumImpl(AssertInternal &assert_obj, const T value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				void Be(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(expected_value, value_, because);
-				}
-
-				void BeZero(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(0, value_, because);
-				}
-
-				void BePositive(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertGreaterEqual<T>(0, value_, because);
-				}
-
-				void BeNegative(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertLess<T>(0, value_, because);
-				}
-
-				void BeGreaterThan(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertGreater<T>(expected_value, value_, because);
-				}
-
-				void BeGreaterThanOrEqual(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertGreaterEqual<T>(expected_value, value_, because);
-				}
-
-				void BeLessThan(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertLess<T>(expected_value, value_, because);
-				}
-
-				void BeLessThanOrEqual(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertLessEqual<T>(expected_value, value_, because);
-				}
-
-				void BeInRange(const T min_value, const T max_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertInRange<T>(value_, min_value, max_value, because);
-				}
-
-				void NotBe(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(expected_value, value_, because);
-				}
-
-				void NotBeZero(const T expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(0, value_, because);
-				}
-
-				void NotBeInRange(const T min_value, const T max_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotInRange<T>(value_, min_value, max_value, because);
-				}
-
-			private:
-				const T value_;
-				AssertInternal &assert_obj_;
-			};
-
-			template<typename T>
-			class ThatNumImpl
-			{
-			public:
-				ThatNumImpl(AssertInternal &assert_obj, const T value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				const T value() const { return value_; }
-
-				ShouldNumImpl<T> Should() { return ShouldNumImpl<T>(assert_obj_, value_); }
-
-			protected:
-				const T value_;
-				AssertInternal &assert_obj_;
-			};
-
-
-
-			/* Boolean */
-			class ShouldBoolImpl
-			{
-			public:
-				ShouldBoolImpl(AssertInternal &assert_obj, const bool& value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				void Be(const bool&expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual(expected_value, value_, because);
-				}
-
-				void NotBe(const bool&expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual(expected_value, value_, because);
-				}
-
-				void BeTrue(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertTrue(value_, because);
-				}
-
-				void BeFalse(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertFalse(value_, because);
-				}
-
-				void NotBeTrue(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertFalse(value_, because);
-				}
-
-				void NotBeFalse(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertTrue(value_, because);
-				}
-
-			private:
-				const bool& value_;
-				AssertInternal &assert_obj_;
-			};
-
-			class ThatBoolImpl
-			{
-			public:
-				ThatBoolImpl(AssertInternal &assert_obj, const bool& value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				const bool& value() const { return value_; }
-
-				ShouldBoolImpl Should() { return ShouldBoolImpl(assert_obj_, value_); }
-
-			protected:
-				const bool& value_;
-				AssertInternal &assert_obj_;
-			};
-
-			/* String */
-			template<class T>
-			class ShouldStrImpl
-			{
-			public:
-				ShouldStrImpl(AssertInternal &assert_obj, const T &value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				void Be(const T &expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(expected_value, value_, because);
-				}
-
-				void NotBe(const T &expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(expected_value, value_, because);
-				}
-
-				void HaveLength(const size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertStringLength(expected_length, value_, because);
-				}
-
-				void NotHaveLength(const size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotStringLength(expected_length, value_, because);
-				}
-
-				void BeEmpty(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertStringEmpty(value_, because);
-				}
-
-				void NotBeEmpty(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotStringEmpty(value_, because);
-				}
-
-				void StartWith(const T &expected_prefix, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertStringStartsWith(expected_prefix, value_, because);
-				}
-
-				void StartWith(const char *expected_prefix, const wchar_t *because = '\0')
-				{
-					StartWith(std::string(expected_prefix), because);
-				}
-
-				void StartWith(const wchar_t *expected_prefix, const wchar_t *because = '\0')
-				{
-					StartWith(std::wstring(expected_prefix), because);
-				}
-
-			private:
-				const T value_;
-				AssertInternal &assert_obj_;
-			};
-
-			template<class T>
-			class ThatStrImpl
-			{
-			public:
-				ThatStrImpl(AssertInternal &assert_obj, const T &value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				ShouldStrImpl<T> Should() { return ShouldStrImpl<T>(assert_obj_, value_); }
-
-			protected:
-				const T value_;
-				AssertInternal &assert_obj_;
-			};
-
-
-			/* Pointer */
-			template<typename T>
-			class ShouldPtrImpl
-			{
-			public:
-				ShouldPtrImpl(AssertInternal &assert_obj, const T * value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				void Be(const T *expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(expected_value, value_, because);
-				}
-
-				void NotBe(const T *expected_value, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(expected_value, value_, because);
-				}
-
-				void BeNull(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual<T>(nullptr, value_, because);
-				}
-
-				void NotBeNull(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual<T>(nullptr, value_, because);
-				}
-
-			private:
-				const T * value_;
-				AssertInternal &assert_obj_;
-			};
-
-			template<typename T>
-			class ThatPtrImpl
-			{
-			public:
-				ThatPtrImpl(AssertInternal &assert_obj, const T * value) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{}
-
-				ShouldPtrImpl<T> Should() { return ShouldPtrImpl<T>(assert_obj_, value_); }
-
-			protected:
-				const T * value_;
-				AssertInternal &assert_obj_;
-			};
-
-
-
-
-
-
-
-
-
-			/* Array */
-			template<typename T, int N>
-			class ShouldArrImpl
-			{
-			public:
-
-				ShouldArrImpl(AssertInternal &assert_obj, const T(&value)[N]) :
-					value_(value),
-					assert_obj_(assert_obj),
-					length_(N)
-				{
-				}
-
-				template<int O>
-				void Be(const T(&expected_value)[O], const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertArrayEqual(expected_value, O, value_, length_, because);
-				}
-
-				template<int O>
-				void NotBe(const T(&expected_value)[O], const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertArrayNotEqual<T>(expected_value, O, value_, length_, because);
-				}
-
-				void HaveLength(size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual(expected_length, length_, because);
-				}
-
-				void NotHaveLength(size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual(expected_length, length_, because);
-				}
-
-			private:
-				const size_t length_;
-				const T(&value_)[N];
-				AssertInternal &assert_obj_;
-			};
-
-			template<typename T, int N>
-			class ThatArrImpl
-			{
-			public:
-				ThatArrImpl(AssertInternal &assert_obj, const T(&value)[N]) :
-					value_(value),
-					assert_obj_(assert_obj)
-				{
-					length_ = N;
-				}
-
-				const T* value() const { return &value_; }
-				size_t length() const { return length_; }
-
-				ShouldArrImpl<T, N> Should() { return ShouldArrImpl<T, N>(assert_obj_, value_); }
-
-			protected:
-				const T(&value_)[N];
-				size_t length_;
-				AssertInternal &assert_obj_;
-			};
-
-			template<typename Container>
-			class ShouldContainerImpl {
-			public:
-				typedef typename Container::value_type value_type;
-				typedef typename Container::iterator iterator;
-
-				ShouldContainerImpl(AssertInternal &assert_obj, Container const& c) : assert_obj_(assert_obj), container_(c) {}
-
-				void Be(Container const& other, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual(other.size(), container_.size(), because);
-					for (auto actual = container_.begin(), expected = other.begin(); actual != container_.end(); ++actual, ++expected)
-					{
-						assert_obj_.AssertEqual(*expected, *actual, because);
-					}
-				}
-
-				void NotBe(Container const& other, const wchar_t *because = '\0')
-				{
-					if (other.size() != container_.size())
-						return;
-
-					for (auto actual = container_.begin(), expected = other.begin(); actual != container_.end() && expected != other.end(); ++actual, ++expected) 
-					{
-						if (*actual != *expected)
-						{
-							return;
-						}
-					}
-
-					assert_obj_.AssertFail(because);
-				}
-
-				void HaveLength(const size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertEqual(expected_length, container_.size(), because);
-				}
-
-				void NotHaveLength(const size_t expected_length, const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertNotEqual(expected_length, container_.size(), because);
-				}
-
-				void BeEmpty(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertTrue(container_.empty(), because);
-				}
-
-				void NotBeEmpty(const wchar_t *because = '\0')
-				{
-					assert_obj_.AssertFalse(container_.empty(), because);
-				}
-			private:
-				Container const& container_;
-				AssertInternal &assert_obj_;
-			};
-
-			template<typename Container>
-			class ThatContainerImpl {
-			public:
-				ThatContainerImpl(AssertInternal &assert_obj, Container const& c) : assert_obj_(assert_obj), container_(c) {}
-
-				ShouldContainerImpl<Container> Should() { return ShouldContainerImpl<Container>(assert_obj_, container_); }
-			private:
-				Container const& container_;
-				AssertInternal &assert_obj_;
-			};
-
-		} // namespace detail
-
-
-
-
-		template<class TAssertImpl>
-		class BasicAssert
-		{
-		public:
-			/* Default */
-			template<typename T>
-			static detail::ThatImpl<T> That(const T& value)
-			{
-				return detail::ThatImpl<T>(TAssertImpl(), value);
-			}
-
-			/* Numeric */
-			static detail::ThatNumImpl<char> That(const char value)
-			{
-				return detail::ThatNumImpl<char>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<unsigned char> That(const unsigned char value)
-			{
-				return detail::ThatNumImpl<unsigned char>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<short> That(const short value)
-			{
-				return detail::ThatNumImpl<short>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<unsigned short> That(const unsigned short value)
-			{
-				return detail::ThatNumImpl<unsigned short>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<int> That(const int value)
-			{
-				return detail::ThatNumImpl<int>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<unsigned int> That(const unsigned int value)
-			{
-				return detail::ThatNumImpl<unsigned int>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<long> That(const long value)
-			{
-				return detail::ThatNumImpl<long>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<unsigned long> That(const unsigned long value)
-			{
-				return detail::ThatNumImpl<unsigned long>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<float> That(const float value)
-			{
-				return detail::ThatNumImpl<float>(TAssertImpl(), value);
-			}
-
-			static detail::ThatNumImpl<double> That(const double value)
-			{
-				return detail::ThatNumImpl<double>(TAssertImpl(), value);
-			}
-
-			/* Boolean */
-			static detail::ThatBoolImpl That(const bool& value)
-			{
-				return detail::ThatBoolImpl(TAssertImpl(), value);
-			}
-
-			/* Array */
-			template<typename T, int N>
-			static detail::ThatArrImpl<T, N> ThatArray(const T (&value)[N])
-			{
-				return detail::ThatArrImpl<T, N>(TAssertImpl(), value);
-			}
-
-			/* String */
-			static detail::ThatStrImpl<std::wstring> That(const std::wstring &value)
-			{
-				return detail::ThatStrImpl<std::wstring>(TAssertImpl(), value);
-			}
-
-			static detail::ThatStrImpl<std::string> That(const std::string & value)
-			{
-				return detail::ThatStrImpl<std::string>(TAssertImpl(), value);
-			}
-
-			static detail::ThatStrImpl<std::wstring> That(const wchar_t * value)
-			{
-				return detail::ThatStrImpl<std::wstring>(TAssertImpl(), std::wstring(value));
-			}
-
-			static detail::ThatStrImpl<std::string> That(const char * value)
-			{
-				return detail::ThatStrImpl<std::string>(TAssertImpl(), std::string(value));
-			}
-
-			/* Pointer */
-
-			template<typename T>
-			static detail::ThatPtrImpl<T> That(const T * value)
-			{
-				return detail::ThatPtrImpl<T>(TAssertImpl(), value);
-			}
-
-			template<typename T>
-			static detail::ThatContainerImpl<T> ThatContainer(T const& container) {
-				return detail::ThatContainerImpl<T>(TAssertImpl(), container);
-			}
-			/* Char Array */
-			/*
-			template<int N>
-			static detail::ThatPtrImpl<wchar_t> That(const wchar_t (&value)[N])
-			{
-				return detail::ThatPtrImpl<wchar_t>(TAssertImpl(), value);
-			}
-
-			template<int N>
-			static detail::ThatPtrImpl<char> That(const char (&value)[N])
-			{
-				return detail::ThatPtrImpl<char>(TAssertImpl(), value);
-			}*/
-		};
-
-
-
-		typedef BasicAssert<detail::AssertInternal> Assert;
-
-	}
-
-}
+#define Be(...) _beFunc(__FILE__, __LINE__, __VA_ARGS__)
+
+/* Default */
+template <typename T> class ShouldImpl
+{
+  public:
+      explicit ShouldImpl(AssertInternal& assert_obj, const T& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const T& expected_value,
+                 const std::string& because = {}) const
+    {
+        m_assertObj.AssertEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBe(...) _notBeFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeFunc(const std::string& file, const int line, const T& expected_value,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+template <typename T> class ThatImpl
+{
+  public:
+      explicit ThatImpl(AssertInternal& assert_obj, const T& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    [[nodiscard]] const T& value() const
+    {
+        return m_value;
+    }
+
+    ShouldImpl<T> Should()
+    {
+        return ShouldImpl<T>(m_assertObj, m_value);
+    }
+
+  protected:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+/* Numeric Types */
+template <typename T> class ShouldNumImpl
+{
+  public:
+      explicit ShouldNumImpl(AssertInternal& assert_obj, const T& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const T& expected_value, const std::string& because = {})
+    {
+        m_assertObj.AssertEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeZero(...) _beZeroFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beZeroFunc(const std::string& file, const int line, const T& /*expected_value*/,
+                const std::string& because = {}) const
+    {
+        m_assertObj.AssertEqual<T>(0, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BePositive(...) _bePositiveFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _bePositiveFunc(const std::string& file, const int line, const T& /*expected_value*/,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertGreaterEqual<T>(0, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeNegative(...) _beNegativeFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beNegativeFunc(const std::string& file, const int line, const T& /*expected_value*/,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertLess<T>(0, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeGreaterThan(...) _beGreaterThanFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beGreaterThanFunc(const std::string& file, const int line, const T& expected_value,
+                       const std::string& because = {}) const
+    {
+        m_assertObj.AssertGreater<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeGreaterThanOrEqual(...) _beGreaterThanOrEqualFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beGreaterThanOrEqualFunc(const std::string& file, const int line, const T& expected_value,
+                              const std::string& because = {}) const
+    {
+        m_assertObj.AssertGreaterEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeLessThan(...) _beLessThanFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beLessThanFunc(const std::string& file, const int line, const T& expected_value,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertLess<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeLessThanOrEqual(...) _beLessThanOrEqualFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beLessThanOrEqualFunc(const std::string& file, const int line, const T& expected_value,
+                           const std::string& because = {}) const
+    {
+        m_assertObj.AssertLessEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeInRange(...) _beInRangeFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beInRangeFunc(const std::string& file, const int line, const T& min_value, const T& max_value,
+                   const std::string& because = {}) const
+    {
+        m_assertObj.AssertInRange<T>(m_value, min_value, max_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _notBeFunc(const std::string& file, const int line, const T& expected_value,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeZero(...) _notBeZeroFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeZeroFunc(const std::string& file, const int line, const T& /*expected_value*/,
+                   const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual<T>(0, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeInRange(...) _notBeInRangeFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeInRangeFunc(const std::string& file, const int line, const T& min_value, const T& max_value,
+                      const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotInRange<T>(m_value, min_value, max_value,
+                                        m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+template <typename T> class ThatNumImpl
+{
+  public:
+      explicit ThatNumImpl(AssertInternal& assert_obj, const T& value) 
+          : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    [[nodiscard]] T value() const
+    {
+        return m_value;
+    }
+
+    [[nodiscard]] ShouldNumImpl<T> Should() const
+    {
+        return ShouldNumImpl<T>(m_assertObj, m_value);
+    }
+
+  protected:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+/* Boolean */
+class ShouldBoolImpl
+{
+  public:
+      explicit ShouldBoolImpl( AssertInternal& assert_obj, const bool& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const bool& expected_value, const std::string& because = {}) 
+    {
+        m_assertObj.AssertEqual(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _notBeFunc(const std::string& file, const int line, const bool& expected_value,
+               const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeTrue(...) _beTrueFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beTrueFunc(const std::string& file, const int line, const std::string& because = {}) 
+    {
+        m_assertObj.AssertTrue(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeFalse(...) _beFalseFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beFalseFunc(const std::string& file, const int line, const std::string& because = {}) 
+    {
+        m_assertObj.AssertFalse(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeTrue(...) _notBeTrueFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeTrueFunc(const std::string& file, const int line, const std::string& because = {}) 
+    {
+        m_assertObj.AssertFalse(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeFalse(...) _notBeFalseFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeFalseFunc(const std::string& file, const int line, const std::string& because = {}) 
+    {
+        m_assertObj.AssertTrue(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const bool& m_value;
+    AssertInternal& m_assertObj;
+};
+
+class ThatBoolImpl
+{
+  public:
+      explicit ThatBoolImpl(AssertInternal& assert_obj, const bool& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    [[nodiscard]] const bool& value() const
+    {
+        return m_value;
+    }
+
+    [[nodiscard]] ShouldBoolImpl Should() const
+    {
+        return ShouldBoolImpl(m_assertObj, m_value);
+    }
+
+  protected:
+    const bool& m_value;
+    AssertInternal& m_assertObj;
+};
+
+/* String */
+template <class T> class ShouldStrImpl
+{
+  public:
+      explicit ShouldStrImpl(AssertInternal& assert_obj, const T& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const T& expected_value, const std::string& because = {})
+    {
+        m_assertObj.AssertEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _notBeFunc(const std::string& file, const int line, const T& expected_value, const std::string& because = {})
+    {
+        m_assertObj.AssertNotEqual<T>(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define HaveLength(...) _haveLengthFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _haveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                    const std::string& because = {}) const
+    {
+        m_assertObj.AssertStringLength(expected_length, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotHaveLength(...) _notHaveLengthFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notHaveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                            const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotStringLength(expected_length, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeEmpty(...) _beEmptyFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beEmptyFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertStringEmpty(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeEmpty(...) _notBeEmptyFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeEmptyFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotStringEmpty(m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define StartWith(...) _startWithFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _startWithFunc(const std::string& file, const int line, const T& expected_prefix,
+                        const std::string& because = {}) const
+    {
+        m_assertObj.AssertStringStartsWith(expected_prefix, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+template <class T> class ThatStrImpl
+{
+  public:
+      explicit ThatStrImpl(AssertInternal& assert_obj, const T& value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    ShouldStrImpl<T> Should()
+    {
+        return ShouldStrImpl<T>(m_assertObj, m_value);
+    }
+
+  protected:
+    const T m_value;
+    AssertInternal& m_assertObj;
+};
+
+/* Pointer */
+class ShouldPtrImpl
+{
+  public:
+      explicit ShouldPtrImpl(AssertInternal& assert_obj, const void* value)
+        : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const void* expected_value, const std::string& because = {})
+    {
+        m_assertObj.AssertEqual(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _notBeFunc(const std::string& file, const int line, const void* expected_value,
+               const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual(expected_value, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeNull(...) _beNullFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beNullFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertEqual((void*)nullptr, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeNull(...) _notBeNullFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeNullFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual((void*)nullptr, m_value, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const void* m_value;
+    AssertInternal& m_assertObj;
+};
+
+class ThatPtrImpl
+{
+  public:
+      explicit ThatPtrImpl(AssertInternal& assert_obj, const void* value) : m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    ShouldPtrImpl Should()
+    {
+        return ShouldPtrImpl(m_assertObj, m_value);
+    }
+
+  protected:
+    const void* m_value;
+    AssertInternal m_assertObj;
+};
+
+/* Array */
+template <typename T, int N> class ShouldArrImpl
+{
+  public:
+      explicit ShouldArrImpl(AssertInternal& assert_obj, const T (&value)[N]) 
+          : length_(N), m_value(value), m_assertObj(assert_obj)
+    {
+    }
+
+    template <int O>
+    void _beFunc(const std::string& file, const int line, const T (&expected_value)[O], const std::string& because = {})
+    {
+        m_assertObj.AssertArrayEqual(expected_value, O, m_value, length_,
+                                     m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    template <int O>
+    void _notBeFunc(const std::string& file, const int line, const T (&expected_value)[O], const std::string& because = {})
+    {
+        m_assertObj.AssertArrayNotEqual<T>(expected_value, O, m_value, length_,
+                                           m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define HaveLength(...) _haveLengthFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _haveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                         const std::string& because = {}) const
+    {
+        m_assertObj.AssertEqual(expected_length, length_, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotHaveLength(...) _notHaveLengthFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notHaveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                       const std::string& because = {}) const
+    {
+        m_assertObj.AssertNotEqual(expected_length, length_, m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const size_t length_;
+    const T (&m_value)[N];
+    AssertInternal& m_assertObj;
+};
+
+template <typename T, int N> class ThatArrImpl
+{
+  public:
+      explicit ThatArrImpl(AssertInternal& assert_obj, const T (&value)[N]) 
+          : m_value(value), m_assertObj(assert_obj)
+    {
+        length_ = N;
+    }
+
+    const T* value() const
+    {
+        return &m_value;
+    }
+
+    [[nodiscard]] size_t length() const
+    {
+        return length_;
+    }
+
+    ShouldArrImpl<T, N> Should()
+    {
+        return ShouldArrImpl<T, N>(m_assertObj, m_value);
+    }
+
+  protected:
+    const T (&m_value)[N];
+    size_t length_;
+    AssertInternal& m_assertObj;
+};
+
+template <typename Container> class ShouldContainerImpl
+{
+  public:
+    typedef typename Container::value_type m_valuetype;
+    using iterator = typename Container::iterator;
+
+    explicit ShouldContainerImpl(AssertInternal& assert_obj, const Container& c) 
+        : container_(c), m_assertObj(assert_obj)
+    {
+    }
+
+    void _beFunc(const std::string& file, const int line, const Container& other, const std::string& because = {})
+    {
+        m_assertObj.AssertEqual(other.size(), container_.size(), because);
+        for (auto actual = container_.begin(), expected = other.begin(); actual != container_.end();
+             ++actual, ++expected)
+        {
+            m_assertObj.AssertEqual(*expected, *actual, m_assertObj.GetStackMessage(file, line, because));
+        }
+    }
+
+    void _notBeFunc(const std::string& file, const int line, const Container& other, const std::string& because = {})
+    {
+        if (other.size() != container_.size())
+        {
+            return;
+        }
+
+        for (auto actual = container_.begin(), expected = other.begin();
+             actual != container_.end() && expected != other.end(); ++actual, ++expected)
+        {
+            if (*actual != *expected)
+            {
+                return;
+            }
+        }
+
+        m_assertObj.AssertFail( m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _haveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                    const std::string& because = {})
+    {
+        m_assertObj.AssertEqual(expected_length, container_.size(), m_assertObj.GetStackMessage(file, line, because));
+    }
+
+    void _notHaveLengthFunc(const std::string& file, const int line, const size_t expected_length,
+                       const std::string& because = {})
+    {
+        m_assertObj.AssertNotEqual(expected_length, container_.size(),
+                                   m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define BeEmpty(...) _beEmptyFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _beEmptyFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertTrue(container_.empty(), m_assertObj.GetStackMessage(file, line, because));
+    }
+
+#define NotBeEmpty(...) _notBeEmptyFunc(__FILE__, __LINE__, __VA_ARGS__)
+    void _notBeEmptyFunc(const std::string& file, const int line, const std::string& because = {}) const
+    {
+        m_assertObj.AssertFalse(container_.empty(), m_assertObj.GetStackMessage(file, line, because));
+    }
+
+  private:
+    const Container& container_;
+    AssertInternal& m_assertObj;
+};
+
+template <typename Container> class ThatContainerImpl
+{
+  public:
+      explicit ThatContainerImpl(AssertInternal& assert_obj, const Container& c) 
+          : container_(c), m_assertObj(assert_obj)
+    {
+    }
+
+    ShouldContainerImpl<Container> Should()
+    {
+        return ShouldContainerImpl<Container>(m_assertObj, container_);
+    }
+
+  private:
+    const Container& container_;
+    AssertInternal& m_assertObj;
+};
+}    // namespace detail
+
+template <class TAssertImpl> class BasicAssert
+{
+  public:
+    static void Message(const std::string& value)
+    {
+        //detail::MessageImpl( value);
+        std::cerr << "[ Message  ] " << value << std::endl;
+    }
+
+    /* Default */
+    template <typename T> static detail::ThatImpl<T> That(const T& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatImpl<T>(var, value);
+    }
+
+    /* Numeric */
+    static detail::ThatNumImpl<char> That(const char& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<char>(var, value);
+    }
+
+    static detail::ThatNumImpl<unsigned char> That(const unsigned char& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<unsigned char>(var, value);
+    }
+
+    static detail::ThatNumImpl<short> That(const short& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<short>(var, value);
+    }
+
+    static detail::ThatNumImpl<unsigned short> That(const unsigned short& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<unsigned short>(var, value);
+    }
+
+    static detail::ThatNumImpl<int> That(const int value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<int>(var, value);
+    }
+
+    static detail::ThatNumImpl<unsigned int> That(const unsigned int& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<unsigned int>(var, value);
+    }
+
+    static detail::ThatNumImpl<long> That(const long& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<long>(var, value);
+    }
+
+    static detail::ThatNumImpl<unsigned long> That(const unsigned long& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<unsigned long>(var, value);
+    }
+
+    static detail::ThatNumImpl<float> That(const float& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<float>(var, value);
+    }
+
+    static detail::ThatNumImpl<double> That(const double& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatNumImpl<double>(var, value);
+    }
+
+    /* Boolean */
+    static detail::ThatBoolImpl That(const bool& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatBoolImpl(var, value);
+    }
+
+    /* Array */
+    template <typename T, int N> static detail::ThatArrImpl<T, N> ThatArray(const T (&value)[N])
+    {
+        auto var = TAssertImpl();
+        return detail::ThatArrImpl<T, N>(var, value);
+    }
+
+    /* String */
+    static detail::ThatStrImpl<std::wstring> That(const std::wstring& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatStrImpl<std::wstring>(var, value);
+    }
+
+    static detail::ThatStrImpl<std::string> That(const std::string& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatStrImpl<std::string>(var, value);
+    }
+
+    static detail::ThatStrImpl<std::wstring> That(const wchar_t* value)
+    {
+        return That(std::wstring(value));
+    }
+
+    static detail::ThatStrImpl<std::string> That(const char* value)
+    {
+        return That(std::string(value));
+    }
+
+    /* Pointer */
+
+    static detail::ThatPtrImpl ThatPtr(const void* value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatPtrImpl(var, value);
+    }
+
+    template <typename T> static detail::ThatContainerImpl<T> ThatContainer(const T& container)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatContainerImpl<T>(var, container);
+    }
+
+    /* Char Array */
+    /*
+            template<int N>
+            static detail::ThatPtrImpl<char> That(const char (&value)[N])
+            {
+                return detail::ThatPtrImpl<char>(var, value);
+            }
+
+            template<int N>
+            static detail::ThatPtrImpl<char> That(const char (&value)[N])
+            {
+                return detail::ThatPtrImpl<char>(var, value);
+            }*/
+};
+
+using Assert = BasicAssert<detail::AssertInternal>;
+}    //namespace evolutional::Chamois

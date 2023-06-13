@@ -17,7 +17,7 @@ Examples
 Verify that an integer matches the expected value:
 
 ```cpp
-Chamois::Assert::That(10).Should().Be(10, L"10 is equal to 10");
+Chamois::Assert::That(10).Should().Be(10, "10 is equal to 10");
 ```
 
 Verify that two arrays are the same:
@@ -25,25 +25,25 @@ Verify that two arrays are the same:
 ```cpp
 int A[5] = { 1, 2, 3, 4, 5 };
 int B[5] = { 1, 2, 3, 4, 5 };
-Chamois::Assert::ThatArray(A).Should().Be(B, L"arrays whould be equal");
+Chamois::Assert::ThatArray(A).Should().Be(B, "arrays whould be equal");
 ```
 
 Verify that two strings are equal:
 
 ```cpp
-Chamois::Assert::That("hello").Should().Be("hello", L"strings should be equal");
+Chamois::Assert::That("hello").Should().Be("hello", "strings should be equal");
 ```
 
 Or that a string starts with a prefix:
 
 ```cpp
-Chamois::Assert::That("hello").Should().StartWith("he", L"string should start with he");
+Chamois::Assert::That("hello").Should().StartWith("he", "string should start with he");
 ```
 
 Verify a boolean is true:
 
 ```cpp
-Chamois::Assert::That(true).Should().BeTrue(L"true is true");
+Chamois::Assert::That(true).Should().BeTrue( "true is true");
 ```
 
 Currently Supported Types
@@ -111,11 +111,30 @@ Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 
 # Modifications by "Smurf-IV"
 [Fluent Assertions]:https://github.com/Smurf-IV/FluentAssertions-for-Cpp
+## Breaking Changes
+- No need to specify the `because` clauses to be wide string at any time.
+  - i.e. the following 
+    - `Assert::That(10).Should().Be(10, "10 is equal to 10");`
+  - the `because` optional string is now using the `const std::string&` usage, to simplify memory being passed around the system.
+
 ## Done
 - Change solution to be VS 2022 and VC-Runtime 14.36
 - Introduce Location of actual failure in GoogleTest
+- "Location of actual failure" in MsTest is done via both string and stack trace
+- MsTest now compiles / runs under `Std C++ 20`
+
+## Continue additions of
+- `GreaterEqual(min_value, actual_value, because);`
+- `LessEqual(max_value, actual_value, because);`
+- `LessThan(min_value, actual_value, because);`
+- `GreaterThan(max_value, actual_value, because);`
+- Add tests in each framework for the above
 
 ## TBD
 - Fix BDD
 - Start to move the assertions to build in `std C++ 20`
 - Complete move to Std C++20 for All testing frameworks
+- More assertion types that follow the `.Net FluentAssertions` patterns
+  - Add tests in each framework for the above
+- - Use the Windows `__LineInfo(const wchar_t* pszFileName, const char* pszFuncName, int lineNumber)` and pass into the asserts above
+- TODO: Use `boost::stackTrace`
