@@ -1,13 +1,28 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
-# Visual Studio 2013
-VisualStudioVersion = 12.0.31101.0
+# Visual Studio Version 17
+VisualStudioVersion = 17.6.33723.286
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chamois.Test", "Chamois.Test\Chamois.Test.vcxproj", "{6BF4918B-A7BB-475E-AC3E-4CC61396CC77}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chamois.GTest", "Chamois.GTest\Chamois.GTest.vcxproj", "{A8BA6CC0-E8AF-4A70-97CD-743D474C2008}"
 EndProject
 Project("{8BC9CEB8-8B4A-11D0-8D11-00A0C91BC942}") = "Chamois.BoostTest", "Chamois.BoostTest\Chamois.BoostTest.vcxproj", "{90340140-C355-4FB9-AA84-2749DACA46BF}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "ZSolutionItems", "ZSolutionItems", "{4C8FCCDC-B1D1-49BC-B987-4AA8946AA771}"
+	ProjectSection(SolutionItems) = preProject
+		.gitignore = .gitignore
+		LICENSE.txt = LICENSE.txt
+		README.md = README.md
+	EndProjectSection
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{E8F0BCF0-4685-4D9D-B5C6-433907943602}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Chamois", "Chamois", "{824D338D-FD5F-43D0-9591-5D95EF912E0D}"
+	ProjectSection(SolutionItems) = preProject
+		Chamois\Chamois.hpp = Chamois\Chamois.hpp
+		Chamois\Chamois_bdd.hpp = Chamois\Chamois_bdd.hpp
+	EndProjectSection
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -30,5 +45,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{6BF4918B-A7BB-475E-AC3E-4CC61396CC77} = {E8F0BCF0-4685-4D9D-B5C6-433907943602}
+		{A8BA6CC0-E8AF-4A70-97CD-743D474C2008} = {E8F0BCF0-4685-4D9D-B5C6-433907943602}
+		{90340140-C355-4FB9-AA84-2749DACA46BF} = {E8F0BCF0-4685-4D9D-B5C6-433907943602}
 	EndGlobalSection
 EndGlobal

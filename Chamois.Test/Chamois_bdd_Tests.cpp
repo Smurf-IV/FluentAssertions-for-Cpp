@@ -4,6 +4,7 @@
 
 using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace evolutional;
+
 namespace ChamoisTest
 {
 	class DummyBank

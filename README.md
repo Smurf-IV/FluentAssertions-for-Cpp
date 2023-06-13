@@ -83,8 +83,8 @@ Ensure that you have included the unit_test.hpp file and defined BOOST_TEST_MODU
 There are a few limitations in the Boost framework support at present. As a result, the Asserts fall back to a simple BOOST_CHECK( a == b ) and we lose the ability to see the expected and actual values.
 
 
-BDD
----
+## BDD
+__Note: This needs to be fixed (See below)__
 
 Chamois includes a simple fluent BDD wrapper, allowing tests to be expressed in the "Given, When, Then" form using C++11's lambda functionality.
 
@@ -109,5 +109,13 @@ Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 ```
 
 
+# Modifications by "Smurf-IV"
+[Fluent Assertions]:https://github.com/Smurf-IV/FluentAssertions-for-Cpp
+## Done
+- Change solution to be VS 2022 and VC-Runtime 14.36
+- Introduce Location of actual failure in GoogleTest
 
-[Fluent Assertions]:https://github.com/dennisdoomen/fluentassertions
+## TBD
+- Fix BDD
+- Start to move the assertions to build in `std C++ 20`
+- Complete move to Std C++20 for All testing frameworks
