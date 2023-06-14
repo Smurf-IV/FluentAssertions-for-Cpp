@@ -121,7 +121,8 @@ Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 - Change solution to be VS 2022 and VC-Runtime 14.36
 - Introduce Location of actual failure in GoogleTest
 - "Location of actual failure" in MsTest is done via both string and stack trace
-- MsTest now compiles / runs under `Std C++ 20`
+- `MsTest` now compiles / runs under `Std C++ 20`
+- `Boost.Test` now compiles / runs under `Std C++ 20`
 
 ## Continue additions of
 - `GreaterEqual(min_value, actual_value, because);`
@@ -137,4 +138,3 @@ Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 - More assertion types that follow the `.Net FluentAssertions` patterns
   - Add tests in each framework for the above
 - - Use the Windows `__LineInfo(const wchar_t* pszFileName, const char* pszFuncName, int lineNumber)` and pass into the asserts above
-- TODO: Use `boost::stackTrace`
