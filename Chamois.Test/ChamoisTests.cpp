@@ -9,13 +9,6 @@ using namespace Microsoft::VisualStudio::CppUnitTestFramework;
 using namespace evolutional;
 
 
-template<> static std::wstring Microsoft::VisualStudio::CppUnitTestFramework::ToString<std::pair<const int, int>>(const std::pair<const int, int>& t) {
-	std::wstringstream ss;
-	ss << "[" << t.first << ", " << t.second << "]";
-	return ss.str();
-}
-
-
 namespace ChamoisTest
 {		
 	TEST_CLASS(ChamoisTests)
@@ -245,21 +238,21 @@ namespace ChamoisTest
 			Negative tests - These WILL fail
 		*/
 //#ifdef CHAMOIS_TEST_ENABLE_FAILING_TESTS
-		TEST_METHOD(Chamois_Assert_NotEqual_Strings_DemonstratingFailure)
+		TEST_METHOD(DemonstratingFailure_Chamois_Assert_NotEqual_Strings)
 		{		
 			const wchar_t *A = L"hello";
 			const wchar_t *B = L"hello";
 			Chamois::Assert::That(A).Should().NotBe(B, "strings should be not equal");
 		}
 
-		TEST_METHOD(Chamois_Assert_NotEqual_Length_Array_DemonstratingFailure)
+		TEST_METHOD(DemonstratingFailure_Chamois_Assert_NotEqual_Length_Array)
 		{		
 			int A[5] = { 1, 2, 3, 4, 5 };
 			int B[5] = { 1, 2, 3, 4, 5 };
 			Chamois::Assert::ThatArray(A).Should().NotBe(B, "arrays should be  not equal");
 		}
 
-		TEST_METHOD(Chamois_Assert_NotEqual_Array_Differs_DemonstratingFailure)
+		TEST_METHOD(DemonstratingFailure_Chamois_Assert_NotEqual_Array_Differs)
 		{
 			int A[5] = { 1, 2, 3, 4, 5 };
 			int B[5] = { 1, 2, 4, 4, 5 };
