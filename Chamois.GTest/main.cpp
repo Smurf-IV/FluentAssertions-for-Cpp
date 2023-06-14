@@ -227,28 +227,28 @@ TEST(ChamoisTest, Chamois_Assert_Container_Map_NotEmpty)
 	Assert::ThatContainer(A).Should().NotBeEmpty( "map not empty.");
 }
 
-#ifdef CHAMOIS_TEST_ENABLE_FAILING_TESTS
-TEST(ChamoisTest, Chamois_Assert_NotEqual_Strings_DemonstratingFailure)
+//#ifdef CHAMOIS_TEST_ENABLE_FAILING_TESTS
+TEST(ChamoisTest, DemonstratingFailure_Chamois_Assert_NotEqual_Strings)
 {
 	const wchar_t *A = L"hello";
 	const wchar_t *B = L"hello";
 	Assert::That(A).Should().NotBe(B, "strings not equal");
 }
 
-TEST(ChamoisTest, Chamois_Assert_NotEqual_Length_Array_DemonstratingFailure)
+TEST(ChamoisTest, DemonstratingFailure_Chamois_Assert_NotEqual_Length_Array)
 {
 	int A[5] = { 1, 2, 3, 4, 5 };
 	int B[5] = { 1, 2, 3, 4, 5 };
 	Assert::ThatArray(A).Should().NotBe(B, "arrays are not equal");
 }
 
-TEST(ChamoisTest, Chamois_Assert_NotEqual_Array_Differs_DemonstratingFailure)
+TEST(ChamoisTest, DemonstratingFailure_Chamois_Assert_NotEqual_Array_Differs)
 {
 	int A[5] = { 1, 2, 3, 4, 5 };
 	int B[5] = { 1, 2, 4, 4, 5 };
 	Assert::ThatArray(A).Should().Be(B, "arrays are not equal");
 }
-#endif
+//#endif
 
 int main(int argc, char **argv) 
 {
