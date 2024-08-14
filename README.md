@@ -62,6 +62,7 @@ Supported Test Frameworks
 * Microsoft's C++ Unit Test Framework
 * Google Test (GTest)
 * Boost Unit Test Framework (UTF)
+* Catch2
 * Others may be added in the future
 
 Usage
@@ -79,6 +80,43 @@ Occasionally, you may get compilation errors in your tests; more often than not 
 Ensure that you have included the unit_test.hpp file and defined BOOST_TEST_MODULE before including the Chamois.hpp header.
 
 There are a few limitations in the Boost framework support at present. As a result, the Asserts fall back to a simple BOOST_CHECK( a == b ) and we lose the ability to see the expected and actual values.
+
+# Modifications by "Smurf-IV"
+[Fluent Assertions]:https://github.com/Smurf-IV/FluentAssertions-for-Cpp
+## Breaking Changes
+- No need to specify the `because` clauses to be wide string at any time.
+  - i.e. the following 
+    - `Assert::That(10).Should().Be(10, "10 is equal to 10");`
+  - the `because` optional string is now using the `const std::string&` usage, to simplify memory being passed around the system.
+
+## Done
+- Change solution to be VS 2022 and VC-Runtime 14.38 (Can still be used in C++11 and above)
+- Introduce Location of actual failure in GoogleTest
+- "Location of actual failure" in MsTest is done via both string and stack trace
+- Complete move to Std C++20 for All testing frameworks
+  - `MsTest` now compiles / runs under `Std C++ 20`
+  - `Boost.Test` now compiles / runs under `Std C++ 20`
+  - `Google.Test` now compiles / runs under `Std C++ 20`
+- [Remove the `Chamois` namespace](https://github.com/Smurf-IV/FluentAssertions-for-Cpp/issues/2)
+- Changed to use explicit `std::` sized types; e.g. `std::uint16_t` instead of `short`
+- Use the Windows `__LineInfo(const wchar_t* pszFileName, const char* pszFuncName, int lineNumber)`for the stack traces "As needed"
+
+## Continued additions of
+- `GreaterEqual(min_value, actual_value, because);`
+- `LessEqual(max_value, actual_value, because);`
+- `LessThan(min_value, actual_value, because);`
+- `GreaterThan(max_value, actual_value, because);`
+- Add `std::make_unique` to the list of "acceptable" pointer types
+- Add `BeApproximately`
+- Add `HaveLength`
+- Add `NotHaveLength`
+- Add `Should().Throw` for expected exception
+- Add `Should().NotThrow` for expected exception
+
+## TBD
+- More assertion types that follow the `.Net FluentAssertions` patterns
+- Add tests in each framework for the above
+- Fix BDD (I do not use it, so no changes have been done in this area)
 
 
 ## BDD
@@ -107,35 +145,3 @@ bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 ```
 
 
-# Modifications by "Smurf-IV"
-[Fluent Assertions]:https://github.com/Smurf-IV/FluentAssertions-for-Cpp
-## Breaking Changes
-- No need to specify the `because` clauses to be wide string at any time.
-  - i.e. the following 
-    - `Assert::That(10).Should().Be(10, "10 is equal to 10");`
-  - the `because` optional string is now using the `const std::string&` usage, to simplify memory being passed around the system.
-
-## Done
-- Change solution to be VS 2022 and VC-Runtime 14.38
-- Introduce Location of actual failure in GoogleTest
-- "Location of actual failure" in MsTest is done via both string and stack trace
-- Complete move to Std C++20 for All testing frameworks
-  - `MsTest` now compiles / runs under `Std C++ 20`
-  - `Boost.Test` now compiles / runs under `Std C++ 20`
-  - `Google.Test` now compiles / runs under `Std C++ 20`
-- [Remove the `Chamois` namespace](https://github.com/Smurf-IV/FluentAssertions-for-Cpp/issues/2)
-- Add `std::make_unique` to the list of "acceptable" pointer types
-
-## Continue additions of
-- `GreaterEqual(min_value, actual_value, because);`
-- `LessEqual(max_value, actual_value, because);`
-- `LessThan(min_value, actual_value, because);`
-- `GreaterThan(max_value, actual_value, because);`
-- Add tests in each framework for the above
-
-## TBD
-- Fix BDD
-- More assertion types that follow the `.Net FluentAssertions` patterns
-  - Add tests in each framework for the above
-- - Use the Windows `__LineInfo(const wchar_t* pszFileName, const char* pszFuncName, int lineNumber)` and pass into the asserts above
-- Remove `Chamois` namespace

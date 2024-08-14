@@ -313,7 +313,7 @@ public:
         }
     }
 
-    template <> static void Equal(const float& expected_value, const float& actual_value, const std::string& because)
+    template <> /*static*/ void Equal(const float& expected_value, const float& actual_value, const std::string& because)
     {
         static auto tol = ::boost::math::fpc::percent_tolerance(0.0001);
         if (because.empty())
@@ -326,7 +326,7 @@ public:
         }
     }
 
-    template <> static void Equal(const double& expected_value, const double& actual_value, const std::string& because)
+    template <> /*static*/ void Equal(const double& expected_value, const double& actual_value, const std::string& because)
     {
         static auto tol = ::boost::math::fpc::percent_tolerance(0.0001);
         if (because.empty())
