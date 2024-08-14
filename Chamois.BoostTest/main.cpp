@@ -255,4 +255,12 @@ BOOST_AUTO_TEST_CASE(Use_Shared_Ptr)
     const auto strPtr = std::make_unique<std::string>("Test String");
     Assert::ThatPtr(strPtr).Should().NotBeNull("Problem Checking nullable string");
 }
+
+BOOST_AUTO_TEST_CASE(Issue_5)   // https://github.com/Smurf-IV/FluentAssertions-for-Cpp/issues/5
+{
+    std::string expected_value = "Bill";
+
+    BOOST_CHECK(expected_value == expected_value);
+    Assert::That(expected_value).Should().Be(expected_value);
+}
 //#endif
