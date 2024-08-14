@@ -1671,11 +1671,24 @@ public:
         return detail::ThatPtrImpl(var, value);
     }
 
+    template <typename T> static detail::ThatPtrImpl ThatPtr(const std::unique_ptr<T>& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatPtrImpl(var, value.get());
+    }
+
+    template <typename T> static detail::ThatPtrImpl ThatPtr(const std::shared_ptr<T>& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatPtrImpl(var, value.get());
+    }
+
     template <typename T> static detail::ThatContainerImpl<T> ThatContainer(const T& container)
     {
         auto var = TAssertImpl();
         return detail::ThatContainerImpl<T>(var, container);
     }
+
 
     /* Char Array */
     /*

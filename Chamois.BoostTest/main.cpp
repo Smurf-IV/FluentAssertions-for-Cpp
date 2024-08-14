@@ -249,4 +249,10 @@ BOOST_AUTO_TEST_CASE(DemonstratingFailure_Chamois_Assert_NotEqual_Array_Differs)
     int B[5] = { 1, 2, 4, 4, 5 };
     Assert::ThatArray(A).Should().Be(B, "arrays should be not equal");
 }
+
+BOOST_AUTO_TEST_CASE(Use_Shared_Ptr)
+{
+    const auto strPtr = std::make_unique<std::string>("Test String");
+    Assert::ThatPtr(strPtr).Should().NotBeNull("Problem Checking nullable string");
+}
 //#endif

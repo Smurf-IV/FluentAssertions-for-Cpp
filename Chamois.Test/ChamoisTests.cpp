@@ -259,5 +259,11 @@ namespace ChamoisTest
         }
         //#endif
 
+
+        TEST_METHOD(Use_Shared_Ptr)
+        {
+            const auto strPtr = std::make_unique<std::string>("Test String");
+            Assert::ThatPtr(strPtr).Should().NotBeNull("Problem Checking nullable string");
+        }
     };
 }

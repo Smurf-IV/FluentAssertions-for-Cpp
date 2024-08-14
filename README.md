@@ -124,7 +124,7 @@ bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
   - `Boost.Test` now compiles / runs under `Std C++ 20`
   - `Google.Test` now compiles / runs under `Std C++ 20`
 - [Remove the `Chamois` namespace](https://github.com/Smurf-IV/FluentAssertions-for-Cpp/issues/2)
-
+- Add `std::make_unique` to the list of "acceptable" pointer types
 
 ## Continue additions of
 - `GreaterEqual(min_value, actual_value, because);`
