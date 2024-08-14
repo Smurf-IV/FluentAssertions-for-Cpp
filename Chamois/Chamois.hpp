@@ -66,7 +66,7 @@
 #error No supported test framework found
 #endif
 
-namespace evolutional::Chamois
+namespace evolutional
 {
     namespace detail
     {
@@ -1163,7 +1163,7 @@ namespace evolutional::Chamois
                         }
                         std::stringstream mess;
                         mess << "Collections size mismatch: " << l_size << " != " << pos << "\n" << because;
-                        m_assertObj.AssertFail(m_assertObj.GetStackMessage(file, line, mess.str() ));
+                        m_assertObj.AssertFail(m_assertObj.GetStackMessage(file, line, mess.str()));
                     }
                 }
                 //for (auto actual = container_.begin(), expected = other.begin(); actual != container_.end();
@@ -1385,4 +1385,4 @@ namespace evolutional::Chamois
     };
 
     using Assert = BasicAssert<detail::AssertInternal>;
-}    //namespace evolutional::Chamois
+}    //namespace evolutional

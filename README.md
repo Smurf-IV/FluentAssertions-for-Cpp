@@ -1,13 +1,13 @@
 Chamois - Fluent Assertions for C++
 ===================================
 
-Chamois is a header-only fluent assertion library for C++11 which is designed to facilitate TDD and BDD through the provision of a natural language syntax. Chamois is inspired by the brilliant [Fluent Assertions] for .NET.
+This vbersion of the "Chamois fluent assertions for C++" is a header-only file for C++20 which is designed to facilitate TDD and BDD through the provision of a natural language syntax. Chamois is inspired by the brilliant [Fluent Assertions] for .NET.
 
 The primary way of expressing a test in Chamois is in the form:
 
 ```cpp
-Chamois::Assert::That(<actual_value>).Should().Be(<expected_value>);
-Chamois::Assert::That(<actual_value>).Should().NotBe(<expected_value>);
+Assert::That(<actual_value>).Should().Be(<expected_value>);
+Assert::That(<actual_value>).Should().NotBe(<expected_value>);
 ```
 
 
@@ -17,7 +17,7 @@ Examples
 Verify that an integer matches the expected value:
 
 ```cpp
-Chamois::Assert::That(10).Should().Be(10, "10 is equal to 10");
+Assert::That(10).Should().Be(10, "10 is equal to 10");
 ```
 
 Verify that two arrays are the same:
@@ -25,25 +25,25 @@ Verify that two arrays are the same:
 ```cpp
 int A[5] = { 1, 2, 3, 4, 5 };
 int B[5] = { 1, 2, 3, 4, 5 };
-Chamois::Assert::ThatArray(A).Should().Be(B, "arrays whould be equal");
+Assert::ThatArray(A).Should().Be(B, "arrays whould be equal");
 ```
 
 Verify that two strings are equal:
 
 ```cpp
-Chamois::Assert::That("hello").Should().Be("hello", "strings should be equal");
+Assert::That("hello").Should().Be("hello", "strings should be equal");
 ```
 
 Or that a string starts with a prefix:
 
 ```cpp
-Chamois::Assert::That("hello").Should().StartWith("he", "string should start with he");
+Assert::That("hello").Should().StartWith("he", "string should start with he");
 ```
 
 Verify a boolean is true:
 
 ```cpp
-Chamois::Assert::That(true).Should().BeTrue( "true is true");
+Assert::That(true).Should().BeTrue( "true is true");
 ```
 
 Currently Supported Types
@@ -54,8 +54,6 @@ Currently Supported Types
 * Arrays (simple arrays)
 * Pointers (naked pointers only)
 * Any object by reference that supports the equality operator
-
-Support for more standard library containers, smart pointers, etc is planned.
 
 
 Supported Test Frameworks
@@ -93,9 +91,9 @@ For example, testing a class behaviour directly:
 ```cpp
 DummyBank bank;
 
-Chamois::bdd::Given::That([&]() { bank.balance_set(100); })
+bdd::Given::That([&]() { bank.balance_set(100); })
 	.When([&]() { bank.Withdraw(80); })
-	.Then([&]() { Chamois::Assert::That(bank.balance()).Should().Be(20); });
+	.Then([&]() { Assert::That(bank.balance()).Should().Be(20); });
 ```
 
 Or creating a class which performs the test actions:
@@ -103,7 +101,7 @@ Or creating a class which performs the test actions:
 ```cpp
 DummyBankTest test;
 
-Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
+bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
 	.When([&]() { test.I_withdraw_80(); })
 	.Then([&]() { test.The_balance_should_be_20(); });
 ```
@@ -118,13 +116,15 @@ Chamois::bdd::Given::That([&]() { test.The_starting_balance_is_100(); })
   - the `because` optional string is now using the `const std::string&` usage, to simplify memory being passed around the system.
 
 ## Done
-- Change solution to be VS 2022 and VC-Runtime 14.36
+- Change solution to be VS 2022 and VC-Runtime 14.38
 - Introduce Location of actual failure in GoogleTest
 - "Location of actual failure" in MsTest is done via both string and stack trace
 - Complete move to Std C++20 for All testing frameworks
   - `MsTest` now compiles / runs under `Std C++ 20`
   - `Boost.Test` now compiles / runs under `Std C++ 20`
   - `Google.Test` now compiles / runs under `Std C++ 20`
+- [Remove the `Chamois` namespace](https://github.com/Smurf-IV/FluentAssertions-for-Cpp/issues/2)
+
 
 ## Continue additions of
 - `GreaterEqual(min_value, actual_value, because);`

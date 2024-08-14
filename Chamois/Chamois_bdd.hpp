@@ -19,82 +19,82 @@
 
 namespace evolutional
 {
-	namespace Chamois
-	{
-		namespace bdd
-		{
-			namespace detail
-			{
-				typedef std::function<void()> Action_t;
+    namespace Chamois
+    {
+        namespace bdd
+        {
+            namespace detail
+            {
+                typedef std::function<void()> Action_t;
 
-				class ThenImpl
-				{
-				public:
-					ThenImpl And(Action_t action, const wchar_t *reason = 0)
-					{
-						action();
-						return ThenImpl();
-					}
-				};
+                class ThenImpl
+                {
+                public:
+                    ThenImpl And(Action_t action, const wchar_t* reason = 0)
+                    {
+                        action();
+                        return ThenImpl();
+                    }
+                };
 
-				class WhenImpl
-				{
-				public:
-					WhenImpl()
-					{
-					}
+                class WhenImpl
+                {
+                public:
+                    WhenImpl()
+                    {
+                    }
 
-					WhenImpl And(Action_t action, const wchar_t *reason = 0)
-					{
-						action();
-						return WhenImpl();
-					}
+                    WhenImpl And(Action_t action, const wchar_t* reason = 0)
+                    {
+                        action();
+                        return WhenImpl();
+                    }
 
-					ThenImpl Then(Action_t action, const wchar_t *reason = 0)
-					{
-						action();
-						return ThenImpl();
-					}
+                    ThenImpl Then(Action_t action, const wchar_t* reason = 0)
+                    {
+                        action();
+                        return ThenImpl();
+                    }
 
-				private:
-				};
+                private:
+                };
 
-				class GivenThatImpl
-				{
-				public:
-					GivenThatImpl()
-					{
-					}
+                class GivenThatImpl
+                {
+                public:
+                    GivenThatImpl()
+                    {
+                    }
 
-					GivenThatImpl AndThat(Action_t action, const wchar_t *reason = 0)
-					{
-						action();
-						return GivenThatImpl();
-					}
+                    GivenThatImpl AndThat(Action_t action, const wchar_t* reason = 0)
+                    {
+                        action();
+                        return GivenThatImpl();
+                    }
 
-					WhenImpl When(Action_t action, const wchar_t *reason = 0)
-					{
-						action();
-						return WhenImpl();
-					}
+                    WhenImpl When(Action_t action, const wchar_t* reason = 0)
+                    {
+                        action();
+                        return WhenImpl();
+                    }
 
-				private:
+                private:
 
-				};
-			}
+                };
+            }
 
-			class Given
-			{
-			public:
+            class Given
+            {
+            public:
 
-				static detail::GivenThatImpl That(detail::Action_t action, const wchar_t *reason = 0)
-				{ 
-					action();
-					return detail::GivenThatImpl();
-				}
-			};
-		}
+                static detail::GivenThatImpl That(detail::Action_t action, const wchar_t* reason = 0)
+                {
+                    action();
+                    return detail::GivenThatImpl();
+                }
+            };
+        }
 
-	}
+    }
 
 }
