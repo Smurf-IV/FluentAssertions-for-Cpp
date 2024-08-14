@@ -313,7 +313,7 @@ public:
         }
     }
 
-    template <> static void Equal(const float& expected_value, const float& actual_value, const std::string& because)
+    template <> /*static*/ void Equal(const float& expected_value, const float& actual_value, const std::string& because)
     {
         static auto tol = ::boost::math::fpc::percent_tolerance(0.0001);
         if (because.empty())
@@ -326,7 +326,7 @@ public:
         }
     }
 
-    template <> static void Equal(const double& expected_value, const double& actual_value, const std::string& because)
+    template <> /*static*/ void Equal(const double& expected_value, const double& actual_value, const std::string& because)
     {
         static auto tol = ::boost::math::fpc::percent_tolerance(0.0001);
         if (because.empty())
@@ -1671,11 +1671,24 @@ public:
         return detail::ThatPtrImpl(var, value);
     }
 
+    template <typename T> static detail::ThatPtrImpl ThatPtr(const std::unique_ptr<T>& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatPtrImpl(var, value.get());
+    }
+
+    template <typename T> static detail::ThatPtrImpl ThatPtr(const std::shared_ptr<T>& value)
+    {
+        auto var = TAssertImpl();
+        return detail::ThatPtrImpl(var, value.get());
+    }
+
     template <typename T> static detail::ThatContainerImpl<T> ThatContainer(const T& container)
     {
         auto var = TAssertImpl();
         return detail::ThatContainerImpl<T>(var, container);
     }
+
 
     /* Char Array */
     /*

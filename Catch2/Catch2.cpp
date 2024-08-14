@@ -253,5 +253,11 @@ TEST_CASE_METHOD(ChamoisTest, "DemonstratingFailure_Chamois_Assert_NotEqual_Arra
     int B[5] = { 1, 2, 4, 4, 5 };
     Assert::ThatArray(A).Should().Be(B, "arrays are not equal");
 }
+
+TEST_CASE_METHOD(ChamoisTest, "Use_Shared_Ptr")
+{
+    const auto strPtr = std::make_unique<std::string>("Test String");
+    Assert::ThatPtr(strPtr).Should().NotBeNull("Problem Checking nullable string");
+}
 //#endif
 

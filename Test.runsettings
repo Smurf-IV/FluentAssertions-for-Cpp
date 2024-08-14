@@ -8,8 +8,8 @@
         <!--<ResultsDirectory>./TestResults</ResultsDirectory>-->
 
         <!-- [x86] | x64  
-      - You can also change it from menu Test, Test Settings, Default Processor Architecture -->
-        <TargetPlatform>x64</TargetPlatform>
+      - You can also change it from menu Test, Test Settings, Default Processor Architecture
+        <TargetPlatform>x64</TargetPlatform> -->
 
         <!--If you omit the TargetFrameworkVersion element from the .runsettings file, 
         the platform automatically determines the framework version based on the built binaries.-->

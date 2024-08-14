@@ -248,6 +248,14 @@ TEST(ChamoisTest, DemonstratingFailure_Chamois_Assert_NotEqual_Array_Differs)
     int B[5] = { 1, 2, 4, 4, 5 };
     Assert::ThatArray(A).Should().Be(B, "arrays are not equal");
 }
+
+
+TEST(ChamoisTest, Use_Shared_Ptr)
+{
+    const auto strPtr = std::make_unique<std::string>("Test String");
+    Assert::ThatPtr(strPtr).Should().NotBeNull("Problem Checking nullable string");
+}
+
 //#endif
 
 int main(int argc, char** argv)
